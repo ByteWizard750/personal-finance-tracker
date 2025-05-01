@@ -523,6 +523,10 @@ tr:hover {
   animation: fadeIn 0.3s ease-in-out;
 }
 
+.modal.active {
+  display: block;
+}
+
 .modal-content {
   background-color: var(--card-background);
   margin: 5% auto;
