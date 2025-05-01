@@ -1,4 +1,4 @@
-cat <<EOF > README.md
+
 # 🌟 FinTrack Pro – Personal Finance Tracker
 
 **FinTrack Pro** is a modern, user-friendly web application designed to help you take full control of your finances. Track your income, expenses, budgets, and savings—all in one place, with sleek visuals, intuitive features, and support for multiple currencies.
@@ -27,18 +27,6 @@ cat <<EOF > README.md
 
 - **🔐 Data Privacy First**  
   Your data is 100% private—stored locally in your browser and never sent to any server.
-
----
-
-## 🚀 Getting Started
-
-1. **Download or clone** this repository.  
-   \`\`\`bash
-   git clone https://github.com/your-username/fintrack-pro.git
-   \`\`\`
-2. Open \`index.html\` in your browser.
-3. Start tracking your income and expenses right away.
-4. Customize your theme and settings for a personalized experience.
 
 ---
 
