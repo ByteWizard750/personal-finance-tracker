@@ -6,7 +6,7 @@
     <title>Personal Finance Tracker</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -16,13 +16,16 @@
                 <h1>FinTrack</h1>
             </div>
             <nav>
-                <button id="dashboard-btn" class="nav-btn active"><i class="fas fa-chart-line"></i> Dashboard</button>
-                <button id="transactions-btn" class="nav-btn"><i class="fas fa-exchange-alt"></i> Transactions</button>
-                <button id="budgets-btn" class="nav-btn"><i class="fas fa-piggy-bank"></i> Budgets</button>
-                <button id="reports-btn" class="nav-btn"><i class="fas fa-file-alt"></i> Reports</button>
+                <button id="dashboard-btn" class="nav-btn active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></button>
+                <button id="transactions-btn" class="nav-btn"><i class="fas fa-exchange-alt"></i> <span>Transactions</span></button>
+                <button id="budgets-btn" class="nav-btn"><i class="fas fa-piggy-bank"></i> <span>Budgets</span></button>
+                <button id="reports-btn" class="nav-btn"><i class="fas fa-file-alt"></i> <span>Reports</span></button>
             </nav>
             <div class="user-section">
-                <div class="theme-toggle">
+                <div class="settings-btn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <div class="theme-toggle" title="Toggle Dark Mode">
                     <i class="fas fa-moon"></i>
                 </div>
                 <div class="profile">
@@ -337,6 +340,54 @@
                     <div class="form-actions">
                         <button type="button" class="btn-cancel">Cancel</button>
                         <button type="submit" class="btn-save">Save Budget</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for settings -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="settings-form">
+                    <div class="form-group">
+                        <label for="currency-select">Currency:</label>
+                        <select id="currency-select" required>
+                            <option value="USD">US Dollar ($)</option>
+                            <option value="EUR">Euro (€)</option>
+                            <option value="GBP">British Pound (£)</option>
+                            <option value="JPY">Japanese Yen (¥)</option>
+                            <option value="CAD">Canadian Dollar (C$)</option>
+                            <option value="AUD">Australian Dollar (A$)</option>
+                            <option value="INR">Indian Rupee (₹)</option>
+                            <option value="CNY">Chinese Yuan (¥)</option>
+                            <option value="BRL">Brazilian Real (R$)</option>
+                            <option value="ZAR">South African Rand (R)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency-position">Currency Symbol Position:</label>
+                        <select id="currency-position" required>
+                            <option value="before">Before amount ($100)</option>
+                            <option value="after">After amount (100$)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="date-format">Date Format:</label>
+                        <select id="date-format" required>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">Cancel</button>
+                        <button type="submit" class="btn-save">Save Settings</button>
                     </div>
                 </form>
             </div>

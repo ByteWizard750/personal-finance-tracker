@@ -123,16 +123,21 @@
     gap: 1rem;
   }
   
-  .theme-toggle {
+  .theme-toggle, .settings-btn {
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 50%;
     background-color: var(--background-color);
     color: var(--text-light);
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
   }
   
-  .theme-toggle:hover {
+  .theme-toggle:hover, .settings-btn:hover {
     background-color: var(--secondary-color);
     color: var(--card-background);
   }
@@ -851,5 +856,37 @@
     color: var(--text-light);
   }
   
-
+  /* Notification */
+  .notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+  }
+  
+  .notification.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .notification.success {
+    background-color: var(--success-color);
+  }
+  
+  .notification.error {
+    background-color: var(--danger-color);
+  }
+  
+  .notification.warning {
+    background-color: var(--warning-color);
+    color: #333;
+  }
   
