@@ -79,7 +79,6 @@ let reportChart;
 // Date formatting
 function formatDate(dateString) {
     const date = new Date(dateString);
-    
     switch(settings.dateFormat) {
         case 'MM/DD/YYYY':
             return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
@@ -94,30 +93,28 @@ function formatDate(dateString) {
 
 // Format currency
 function formatCurrency(amount) {
-    const symbol = getCurrencySymbol(settings.currency);
-    const formattedAmount = Math.abs(amount).toFixed(2);
-    
-    if (settings.currencyPosition === 'before') {
-        return `${symbol}${formattedAmount}`;
-    } else {
-        return `${formattedAmount}${symbol}`;
+    const currency = settings.currency || 'USD';
+    const position = settings.currencyPosition || 'before';
+    const formatted = new Intl.NumberFormat(settings.locale || 'en-US', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+
+    if (position === 'after') {
+        const symbol = getCurrencySymbol(currency);
+        return `${Math.abs(amount).toFixed(2)} ${symbol}`;
     }
+    return formatted;
 }
 
 function getCurrencySymbol(currencyCode) {
-    switch(currencyCode) {
-        case 'USD': return '$';
-        case 'EUR': return '€';
-        case 'GBP': return '£';
-        case 'JPY': return '¥';
-        case 'CAD': return 'C$';
-        case 'AUD': return 'A$';
-        case 'INR': return '₹';
-        case 'CNY': return '¥';
-        case 'BRL': return 'R$';
-        case 'ZAR': return 'R';
-        default: return '$';
-    }
+    const symbols = {
+        USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'C$', AUD: 'A$', INR: '₹', CNY: '¥', BRL: 'R$', ZAR: 'R',
+        CHF: 'CHF', RUB: '₽', SGD: 'S$', HKD: 'HK$', KRW: '₩', MXN: '$', SEK: 'kr', NZD: 'NZ$', TRY: '₺', AED: 'د.إ'
+    };
+    return symbols[currencyCode] || currencyCode;
 }
 
 // Navigation
@@ -125,15 +122,11 @@ function showSection(sectionId) {
     sections.forEach(section => {
         section.classList.remove('active');
     });
-    
     document.getElementById(sectionId).classList.add('active');
-    
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
     document.getElementById(`${sectionId}-btn`).classList.add('active');
-    
     // Refresh data when navigating
     if (sectionId === 'dashboard') {
         updateDashboard();
@@ -148,17 +141,17 @@ function showSection(sectionId) {
 
 // Modal Controls
 function openModal(modalId) {
-    document.getElementById(modalId).style.display = 'block';
+    document.getElementById(modalId).classList.add('active');
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    document.getElementById(modalId).classList.remove('active');
 }
 
 function closeAllModals() {
-    transactionModal.style.display = 'none';
-    budgetModal.style.display = 'none';
-    settingsModal.style.display = 'none';
+    transactionModal.classList.remove('active');
+    budgetModal.classList.remove('active');
+    settingsModal.classList.remove('active');
 }
 
 // Transaction Functions
@@ -197,26 +190,22 @@ function saveTransactions() {
 function loadTransactions() {
     // Apply filters
     let filteredTransactions = [...transactions];
-    
     const typeFilter = filterType.value;
     const categoryFilter = filterCategory.value;
     const dateFilter = filterDate.value;
     const searchQuery = searchTransaction.value.toLowerCase();
-    
+
     if (typeFilter !== 'all') {
         filteredTransactions = filteredTransactions.filter(t => t.type === typeFilter);
     }
-    
     if (categoryFilter !== 'all') {
         filteredTransactions = filteredTransactions.filter(t => t.category === categoryFilter);
     }
-    
     if (dateFilter !== 'all') {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const startOfYear = new Date(now.getFullYear(), 0, 1);
-        
         if (dateFilter === 'this-month') {
             filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= startOfMonth);
         } else if (dateFilter === 'last-month') {
@@ -225,17 +214,14 @@ function loadTransactions() {
             filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= startOfYear);
         }
     }
-    
     if (searchQuery) {
         filteredTransactions = filteredTransactions.filter(t => 
             t.description.toLowerCase().includes(searchQuery) || 
             t.category.toLowerCase().includes(searchQuery)
         );
     }
-    
     // Clear table
     transactionsBody.innerHTML = '';
-    
     // Display transactions
     if (filteredTransactions.length === 0) {
         transactionsBody.innerHTML = `
@@ -262,7 +248,6 @@ function loadTransactions() {
             transactionsBody.appendChild(row);
         });
     }
-    
     // Set up event listeners for edit/delete buttons
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -270,14 +255,12 @@ function loadTransactions() {
             editTransaction(id);
         });
     });
-    
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.getAttribute('data-id');
             deleteTransaction(id);
         });
     });
-    
     // Update the categories filter
     updateCategoryFilter();
 }
@@ -285,10 +268,8 @@ function loadTransactions() {
 function updateCategoryFilter() {
     // Clear options first
     filterCategory.innerHTML = '<option value="all">All Categories</option>';
-    
     // Get unique categories from transactions
     const categories = [...new Set(transactions.map(t => t.category))];
-    
     // Add categories to select
     categories.sort().forEach(category => {
         const option = document.createElement('option');
@@ -301,30 +282,22 @@ function updateCategoryFilter() {
 function editTransaction(id) {
     const transaction = transactions.find(t => t.id === id);
     if (!transaction) return;
-    
     document.getElementById('transaction-id').value = transaction.id;
     document.getElementById('modal-title').textContent = 'Edit Transaction';
-    
     document.querySelector(`input[name="type"][value="${transaction.type}"]`).checked = true;
     document.getElementById('transaction-amount').value = transaction.amount;
     document.getElementById('transaction-description').value = transaction.description;
-    
-    // Update category options based on type
     updateCategoryOptions(transaction.type);
-    
     document.getElementById('transaction-category').value = transaction.category;
     document.getElementById('transaction-date').value = transaction.date;
     document.getElementById('transaction-notes').value = transaction.notes || '';
-    
     openModal('transaction-modal');
 }
 
 function updateCategoryOptions(type) {
     const categorySelect = document.getElementById('transaction-category');
     categorySelect.innerHTML = '';
-    
     const categories = type === 'income' ? incomeCategories : expenseCategories;
-    
     categories.forEach(category => {
         const option = document.createElement('option');
         option.value = category;
@@ -367,11 +340,9 @@ function saveBudgets() {
 function loadBudgets() {
     // Clear container
     budgetsContainer.innerHTML = '';
-    
     // Calculate total budget and used amount
     let totalBudget = 0;
     let totalUsed = 0;
-    
     // Display budgets
     if (budgets.length === 0) {
         budgetsContainer.innerHTML = `
@@ -383,17 +354,14 @@ function loadBudgets() {
         budgets.forEach(budget => {
             const spent = calculateSpentForBudget(budget);
             const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
-            
             totalBudget += budget.amount;
             totalUsed += spent;
-            
             let progressClass = 'progress-normal';
             if (percentage >= 90) {
                 progressClass = 'progress-danger';
             } else if (percentage >= 75) {
                 progressClass = 'progress-warning';
             }
-            
             const budgetCard = document.createElement('div');
             budgetCard.className = 'budget-card';
             budgetCard.innerHTML = `
@@ -417,18 +385,15 @@ function loadBudgets() {
                     <span>Started: ${formatDate(budget.startDate)}</span>
                 </div>
             `;
-            
             budgetsContainer.appendChild(budgetCard);
         });
     }
-    
     // Update budget overview
     totalBudgetEl.textContent = formatCurrency(totalBudget);
     budgetUsedEl.textContent = formatCurrency(totalUsed);
     budgetUsageRateEl.textContent = totalBudget > 0 
         ? `${Math.round((totalUsed / totalBudget) * 100)}%` 
         : '0%';
-    
     // Set up event listeners for edit/delete buttons
     document.querySelectorAll('.budget-card .btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -436,7 +401,6 @@ function loadBudgets() {
             editBudget(id);
         });
     });
-    
     document.querySelectorAll('.budget-card .btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.getAttribute('data-id');
@@ -448,11 +412,9 @@ function loadBudgets() {
 function calculateSpentForBudget(budget) {
     const now = new Date();
     const startDate = new Date(budget.startDate);
-    
     let endDate;
     if (budget.period === 'monthly') {
         endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-        // If budget is from previous months, adjust accordingly
         const monthsDiff = (now.getFullYear() - startDate.getFullYear()) * 12 + now.getMonth() - startDate.getMonth();
         if (monthsDiff > 0) {
             startDate.setMonth(startDate.getMonth() + monthsDiff);
@@ -460,50 +422,38 @@ function calculateSpentForBudget(budget) {
         }
     } else if (budget.period === 'yearly') {
         endDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate() - 1);
-        // If budget is from previous years, adjust accordingly
         const yearsDiff = now.getFullYear() - startDate.getFullYear();
         if (yearsDiff > 0) {
             startDate.setFullYear(startDate.getFullYear() + yearsDiff);
             endDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate() - 1);
         }
     }
-    
-    // Current date should not exceed end date
     const periodEnd = now > endDate ? endDate : now;
-    
-    // Filter transactions within the period and matching the category
     const relevantTransactions = transactions.filter(t => 
         t.type === 'expense' && 
         t.category === budget.category && 
         new Date(t.date) >= startDate && 
         new Date(t.date) <= periodEnd
     );
-    
-    // Sum the amounts
     return relevantTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
 }
 
 function editBudget(id) {
     const budget = budgets.find(b => b.id === id);
     if (!budget) return;
-    
     document.getElementById('budget-id').value = budget.id;
     document.getElementById('budget-modal-title').textContent = 'Edit Budget';
-    
     document.getElementById('budget-category').value = budget.category;
     document.getElementById('budget-amount').value = budget.amount;
     document.getElementById('budget-period').value = budget.period;
     document.getElementById('budget-start-date').value = budget.startDate;
-    
     openModal('budget-modal');
 }
 
 // Dashboard Functions
 function updateDashboard() {
-    // Calculate income, expenses, and balance
     let totalIncome = 0;
     let totalExpenses = 0;
-    
     transactions.forEach(transaction => {
         if (transaction.type === 'income') {
             totalIncome += Number(transaction.amount);
@@ -511,32 +461,20 @@ function updateDashboard() {
             totalExpenses += Number(transaction.amount);
         }
     });
-    
     const balance = totalIncome - totalExpenses;
     const savingsRate = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
-    
-    // Update summary cards
     totalIncomeEl.textContent = formatCurrency(totalIncome);
     totalExpensesEl.textContent = formatCurrency(totalExpenses);
     balanceEl.textContent = formatCurrency(balance);
     savingsRateEl.textContent = `${savingsRate}%`;
-    
-    // Load recent transactions
     loadRecentTransactions();
-    
-    // Update charts
     updateMonthlyChart();
     updateCategoryChart();
 }
 
 function loadRecentTransactions() {
-    // Clear table
     recentTransactionsBody.innerHTML = '';
-    
-    // Get 5 most recent transactions
     const recentTransactions = transactions.slice(0, 5);
-    
-    // Display transactions
     if (recentTransactions.length === 0) {
         recentTransactionsBody.innerHTML = `
             <tr>
@@ -562,41 +500,30 @@ function loadRecentTransactions() {
 
 function updateMonthlyChart() {
     const ctx = document.getElementById('monthly-chart').getContext('2d');
-    
-    // Get last 6 months
     const labels = [];
     const incomeData = [];
     const expenseData = [];
-    
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
         const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthName = month.toLocaleString('default', { month: 'short' });
         labels.push(monthName);
-        
-        // Calculate totals for this month
         const monthIncome = transactions.filter(t => 
             t.type === 'income' && 
             new Date(t.date).getMonth() === month.getMonth() && 
             new Date(t.date).getFullYear() === month.getFullYear()
         ).reduce((sum, t) => sum + Number(t.amount), 0);
-        
         const monthExpense = transactions.filter(t => 
             t.type === 'expense' && 
             new Date(t.date).getMonth() === month.getMonth() && 
             new Date(t.date).getFullYear() === month.getFullYear()
         ).reduce((sum, t) => sum + Number(t.amount), 0);
-        
         incomeData.push(monthIncome);
         expenseData.push(monthExpense);
     }
-    
-    // Destroy previous chart if it exists
     if (monthlyChart) {
         monthlyChart.destroy();
     }
-    
-    // Create new chart
     monthlyChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -645,8 +572,6 @@ function updateMonthlyChart() {
 
 function updateCategoryChart() {
     const ctx = document.getElementById('category-chart').getContext('2d');
-    
-    // Get categories and their totals (for expenses only)
     const categories = {};
     transactions.filter(t => t.type === 'expense').forEach(transaction => {
         if (!categories[transaction.category]) {
@@ -654,16 +579,11 @@ function updateCategoryChart() {
         }
         categories[transaction.category] += Number(transaction.amount);
     });
-    
-    // Sort categories by amount (descending)
     const sortedCategories = Object.entries(categories)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5); // Top 5 categories
-    
+        .slice(0, 5);
     const labels = sortedCategories.map(c => c[0]);
     const data = sortedCategories.map(c => c[1]);
-    
-    // Generate colors
     const backgroundColors = [
         'rgba(108, 92, 231, 0.7)',
         'rgba(253, 121, 168, 0.7)',
@@ -671,13 +591,9 @@ function updateCategoryChart() {
         'rgba(9, 132, 227, 0.7)',
         'rgba(0, 184, 148, 0.7)'
     ];
-    
-    // Destroy previous chart if it exists
     if (categoryChart) {
         categoryChart.destroy();
     }
-    
-    // Create new chart
     categoryChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -705,36 +621,28 @@ function updateCategoryChart() {
 
 // Report Functions
 function initializeReports() {
-    // Set up the report chart on first load
     generateReport();
 }
 
 function generateReport() {
     const type = reportType.value;
     const period = reportPeriod.value;
-    
-    // Get date range for the period
     const now = new Date();
     let startDate;
     let endDate = now;
-    
     if (period === 'month') {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else if (period === 'quarter') {
         startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
     } else if (period === 'year') {
         startDate = new Date(now.getFullYear(), 0, 1);
-    } else { // all time
-        startDate = new Date(0); // beginning of time
+    } else {
+        startDate = new Date(0);
     }
-    
-    // Filter transactions within the period
     const filteredTransactions = transactions.filter(t => 
         new Date(t.date) >= startDate && 
         new Date(t.date) <= endDate
     );
-    
-    // Generate report based on type
     if (type === 'income-expense') {
         generateIncomeExpenseReport(filteredTransactions, period);
     } else if (type === 'category-breakdown') {
@@ -746,108 +654,84 @@ function generateReport() {
 
 function generateIncomeExpenseReport(filteredTransactions, period) {
     const ctx = document.getElementById('report-chart').getContext('2d');
-    
     let labels = [];
     let incomeData = [];
     let expenseData = [];
-    
     const now = new Date();
-    
     if (period === 'month') {
-        // Daily breakdown for current month
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         for (let i = 1; i <= daysInMonth; i++) {
             labels.push(i.toString());
-            
             const dayIncome = filteredTransactions.filter(t => 
                 t.type === 'income' && 
                 new Date(t.date).getDate() === i &&
                 new Date(t.date).getMonth() === now.getMonth() &&
                 new Date(t.date).getFullYear() === now.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const dayExpense = filteredTransactions.filter(t => 
                 t.type === 'expense' && 
                 new Date(t.date).getDate() === i &&
                 new Date(t.date).getMonth() === now.getMonth() &&
                 new Date(t.date).getFullYear() === now.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             incomeData.push(dayIncome);
             expenseData.push(dayExpense);
         }
     } else if (period === 'quarter') {
-        // Last 3 months, monthly breakdown
         for (let i = 2; i >= 0; i--) {
             const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthName = month.toLocaleString('default', { month: 'short' });
             labels.push(monthName);
-            
             const monthIncome = filteredTransactions.filter(t => 
                 t.type === 'income' && 
                 new Date(t.date).getMonth() === month.getMonth() && 
                 new Date(t.date).getFullYear() === month.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const monthExpense = filteredTransactions.filter(t => 
                 t.type === 'expense' && 
                 new Date(t.date).getMonth() === month.getMonth() && 
                 new Date(t.date).getFullYear() === month.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             incomeData.push(monthIncome);
             expenseData.push(monthExpense);
         }
     } else if (period === 'year') {
-        // Current year, monthly breakdown
         for (let i = 0; i < 12; i++) {
             const month = new Date(now.getFullYear(), i, 1);
             const monthName = month.toLocaleString('default', { month: 'short' });
             labels.push(monthName);
-            
             const monthIncome = filteredTransactions.filter(t => 
                 t.type === 'income' && 
                 new Date(t.date).getMonth() === month.getMonth() && 
                 new Date(t.date).getFullYear() === month.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const monthExpense = filteredTransactions.filter(t => 
                 t.type === 'expense' && 
                 new Date(t.date).getMonth() === month.getMonth() && 
                 new Date(t.date).getFullYear() === month.getFullYear()
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             incomeData.push(monthIncome);
             expenseData.push(monthExpense);
         }
-    } else { // all time
-        // Group by year
+    } else {
         const years = [...new Set(filteredTransactions.map(t => new Date(t.date).getFullYear()))].sort();
-        
         years.forEach(year => {
             labels.push(year.toString());
-            
             const yearIncome = filteredTransactions.filter(t => 
                 t.type === 'income' && 
                 new Date(t.date).getFullYear() === year
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const yearExpense = filteredTransactions.filter(t => 
                 t.type === 'expense' && 
                 new Date(t.date).getFullYear() === year
             ).reduce((sum, t) => sum + Number(t.amount), 0);
-            
             incomeData.push(yearIncome);
             expenseData.push(yearExpense);
         });
     }
-    
-    // Destroy previous chart if it exists
     if (reportChart) {
         reportChart.destroy();
     }
-    
-    // Create new chart
     reportChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -892,15 +776,12 @@ function generateIncomeExpenseReport(filteredTransactions, period) {
             }
         }
     });
-    
-    // Update report summary
     const totalIncome = filteredTransactions.filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0);
     const totalExpense = filteredTransactions.filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
     const netSavings = totalIncome - totalExpense;
     const savingsRate = totalIncome > 0 ? Math.round((netSavings / totalIncome) * 100) : 0;
-    
     reportSummaryContent.innerHTML = `
         <div class="summary-item">
             <div class="label">Total Income:</div>
@@ -923,25 +804,17 @@ function generateIncomeExpenseReport(filteredTransactions, period) {
 
 function generateCategoryBreakdownReport(filteredTransactions) {
     const ctx = document.getElementById('report-chart').getContext('2d');
-    
-    // Calculate expense categories
     const expenseCategories = {};
-    
     filteredTransactions.filter(t => t.type === 'expense').forEach(transaction => {
         if (!expenseCategories[transaction.category]) {
             expenseCategories[transaction.category] = 0;
         }
         expenseCategories[transaction.category] += Number(transaction.amount);
     });
-    
-    // Sort categories by amount (descending)
     const sortedExpenseCategories = Object.entries(expenseCategories)
         .sort((a, b) => b[1] - a[1]);
-    
     const labels = sortedExpenseCategories.map(c => c[0]);
     const data = sortedExpenseCategories.map(c => c[1]);
-    
-    // Generate colors
     const backgroundColors = [
         'rgba(108, 92, 231, 0.7)',
         'rgba(253, 121, 168, 0.7)',
@@ -954,16 +827,10 @@ function generateCategoryBreakdownReport(filteredTransactions) {
         'rgba(46, 204, 113, 0.7)',
         'rgba(236, 240, 241, 0.7)'
     ];
-    
-    // If there are more categories than colors, repeat the colors
     const colors = labels.map((_, i) => backgroundColors[i % backgroundColors.length]);
-    
-    // Destroy previous chart if it exists
     if (reportChart) {
         reportChart.destroy();
     }
-    
-    // Create new chart
     reportChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -990,23 +857,16 @@ function generateCategoryBreakdownReport(filteredTransactions) {
             }
         }
     });
-    
-    // Update report summary
     const totalExpense = data.reduce((sum, amount) => sum + amount, 0);
-    
     let summaryHTML = `
         <div class="summary-item">
             <div class="label">Total Expenses:</div>
             <div class="value">${formatCurrency(totalExpense)}</div>
         </div>
     `;
-    
-    // Add top 5 categories
     const top5Categories = sortedExpenseCategories.slice(0, 5);
-    
     if (top5Categories.length > 0) {
         summaryHTML += `<div class="summary-section">Top Categories:</div>`;
-        
         top5Categories.forEach(([category, amount]) => {
             const percentage = Math.round((amount / totalExpense) * 100);
             summaryHTML += `
@@ -1017,150 +877,108 @@ function generateCategoryBreakdownReport(filteredTransactions) {
             `;
         });
     }
-    
     reportSummaryContent.innerHTML = summaryHTML;
 }
 
 function generateSavingsTrendReport(period) {
     const ctx = document.getElementById('report-chart').getContext('2d');
-    
     let labels = [];
     let savingsData = [];
     let savingsRateData = [];
-    
     const now = new Date();
     let dataPoints;
-    
     if (period === 'month') {
-        // Current month, weekly breakdown
-        dataPoints = 4; // 4 weeks
+        dataPoints = 4;
         const weeksInMonth = Math.ceil(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() / 7);
-        
         for (let i = 0; i < weeksInMonth; i++) {
             const weekStart = new Date(now.getFullYear(), now.getMonth(), i * 7 + 1);
             const weekEnd = new Date(now.getFullYear(), now.getMonth(), i * 7 + 7);
-            
-            // Adjust end date if it's beyond the current date
             if (weekEnd > now) {
                 weekEnd.setTime(now.getTime());
             }
-            
             labels.push(`Week ${i + 1}`);
-            
             const weekTransactions = transactions.filter(t => 
                 new Date(t.date) >= weekStart && 
                 new Date(t.date) <= weekEnd
             );
-            
             const weekIncome = weekTransactions.filter(t => t.type === 'income')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
             const weekExpense = weekTransactions.filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const savings = weekIncome - weekExpense;
             const savingsRate = weekIncome > 0 ? (savings / weekIncome) * 100 : 0;
-            
             savingsData.push(savings);
             savingsRateData.push(savingsRate);
         }
     } else if (period === 'quarter') {
-        // Last 3 months, monthly breakdown
-        dataPoints = 3; // 3 months
-        
+        dataPoints = 3;
         for (let i = 2; i >= 0; i--) {
             const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
             const monthName = month.toLocaleString('default', { month: 'short' });
-            
             labels.push(monthName);
-            
             const monthTransactions = transactions.filter(t => 
                 new Date(t.date) >= month && 
                 new Date(t.date) <= monthEnd
             );
-            
             const monthIncome = monthTransactions.filter(t => t.type === 'income')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
             const monthExpense = monthTransactions.filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const savings = monthIncome - monthExpense;
             const savingsRate = monthIncome > 0 ? (savings / monthIncome) * 100 : 0;
-            
             savingsData.push(savings);
             savingsRateData.push(savingsRate);
         }
     } else if (period === 'year') {
-        // Current year, quarterly breakdown
-        dataPoints = 4; // 4 quarters
-        
+        dataPoints = 4;
         for (let i = 0; i < 4; i++) {
             const quarterStart = new Date(now.getFullYear(), i * 3, 1);
             const quarterEnd = new Date(now.getFullYear(), i * 3 + 3, 0);
-            
-            // Adjust end date if it's beyond the current date
             if (quarterEnd > now) {
                 quarterEnd.setTime(now.getTime());
             }
-            
             labels.push(`Q${i + 1}`);
-            
             const quarterTransactions = transactions.filter(t => 
                 new Date(t.date) >= quarterStart && 
                 new Date(t.date) <= quarterEnd
             );
-            
             const quarterIncome = quarterTransactions.filter(t => t.type === 'income')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
             const quarterExpense = quarterTransactions.filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const savings = quarterIncome - quarterExpense;
             const savingsRate = quarterIncome > 0 ? (savings / quarterIncome) * 100 : 0;
-            
             savingsData.push(savings);
             savingsRateData.push(savingsRate);
         }
-    } else { // all time
-        // Yearly breakdown
+    } else {
         const years = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort();
         dataPoints = years.length;
-        
         years.forEach(year => {
             const yearStart = new Date(year, 0, 1);
             const yearEnd = new Date(year, 11, 31);
-            
-            // Adjust end date if it's beyond the current date
             if (yearEnd > now) {
                 yearEnd.setTime(now.getTime());
             }
-            
             labels.push(year.toString());
-            
             const yearTransactions = transactions.filter(t => 
                 new Date(t.date) >= yearStart && 
                 new Date(t.date) <= yearEnd
             );
-            
             const yearIncome = yearTransactions.filter(t => t.type === 'income')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
             const yearExpense = yearTransactions.filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
-            
             const savings = yearIncome - yearExpense;
             const savingsRate = yearIncome > 0 ? (savings / yearIncome) * 100 : 0;
-            
             savingsData.push(savings);
             savingsRateData.push(savingsRate);
         });
     }
-    
-    // Destroy previous chart if it exists
     if (reportChart) {
         reportChart.destroy();
     }
-    
-    // Create new chart
     reportChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1228,12 +1046,8 @@ function generateSavingsTrendReport(period) {
             }
         }
     });
-    
-    // Update report summary
     const totalSavings = savingsData.reduce((sum, saving) => sum + saving, 0);
     const avgSavingsRate = savingsRateData.reduce((sum, rate) => sum + rate, 0) / dataPoints;
-    
-    // Calculate trend (increasing/decreasing)
     let trend = 'steady';
     if (savingsData.length >= 2) {
         if (savingsData[savingsData.length - 1] > savingsData[0]) {
@@ -1242,7 +1056,6 @@ function generateSavingsTrendReport(period) {
             trend = 'decreasing';
         }
     }
-    
     reportSummaryContent.innerHTML = `
         <div class="summary-item">
             <div class="label">Total Savings:</div>
@@ -1262,15 +1075,9 @@ function generateSavingsTrendReport(period) {
 function exportReport() {
     const type = reportType.value;
     const period = reportPeriod.value;
-    
-    // Get the chart image
     const canvas = document.getElementById('report-chart');
     const chartImage = canvas.toDataURL('image/png');
-    
-    // Get the report summary
     const summary = reportSummaryContent.innerText;
-    
-    // Create the HTML content
     let title = '';
     if (type === 'income-expense') {
         title = 'Income vs Expenses Report';
@@ -1279,7 +1086,6 @@ function exportReport() {
     } else if (type === 'savings-trend') {
         title = 'Savings Trend Report';
     }
-    
     let periodText = '';
     if (period === 'month') {
         periodText = 'Current Month';
@@ -1290,7 +1096,6 @@ function exportReport() {
     } else {
         periodText = 'All Time';
     }
-    
     const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -1341,36 +1146,25 @@ function exportReport() {
                 <h2>${periodText}</h2>
                 <p>Generated on: ${formatDate(new Date())}</p>
             </div>
-            
             <div class="chart-container">
                 <img src="${chartImage}" alt="Report Chart">
             </div>
-            
             <div class="summary-container">
                 <h2>Summary</h2>
                 <pre>${summary}</pre>
             </div>
-            
             <div class="footer">
                 <p>Generated by Personal Finance Tracker</p>
             </div>
         </body>
         </html>
     `;
-    
-    // Create a new Blob with the HTML content
     const blob = new Blob([htmlContent], { type: 'text/html' });
-    
-    // Create a download link
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `${title.toLowerCase().replace(/\s+/g, '-')}-${periodText.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
-    
-    // Trigger download
     link.click();
-    
-    // Clean up
     URL.revokeObjectURL(url);
 }
 
@@ -1378,8 +1172,6 @@ function exportReport() {
 function updateSettings(newSettings) {
     settings = {...settings, ...newSettings};
     localStorage.setItem('settings', JSON.stringify(settings));
-    
-    // Refresh interface
     updateDashboard();
     loadTransactions();
     loadBudgets();
@@ -1391,15 +1183,10 @@ function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
-    
     document.body.appendChild(notification);
-    
-    // Show notification
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
-    
-    // Hide and remove notification
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -1410,93 +1197,66 @@ function showNotification(message, type = 'info') {
 
 function toggleTheme() {
     document.body.classList.toggle('dark-theme');
-    
-    // Store theme preference
     const isDarkTheme = document.body.classList.contains('dark-theme');
     localStorage.setItem('dark-theme', isDarkTheme);
 }
 
 // Initialize functions
 function init() {
-    // Load theme preference
     const isDarkTheme = localStorage.getItem('dark-theme') === 'true';
     if (isDarkTheme) {
         document.body.classList.add('dark-theme');
     }
-    
-    // Navigation event listeners
     dashboardBtn.addEventListener('click', () => showSection('dashboard'));
     transactionsBtn.addEventListener('click', () => showSection('transactions'));
     budgetsBtn.addEventListener('click', () => showSection('budgets'));
     reportsBtn.addEventListener('click', () => showSection('reports'));
-    
-    // Add buttons event listeners
     addTransactionBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Reset form
             document.getElementById('transaction-id').value = '';
             document.getElementById('modal-title').textContent = 'Add Transaction';
             transactionForm.reset();
             document.querySelector('input[name="type"][value="expense"]').checked = true;
             updateCategoryOptions('expense');
             document.getElementById('transaction-date').valueAsDate = new Date();
-            
             openModal('transaction-modal');
         });
     });
-    
     addBudgetBtn.addEventListener('click', () => {
-        // Reset form
         document.getElementById('budget-id').value = '';
         document.getElementById('budget-modal-title').textContent = 'Add Budget';
         budgetForm.reset();
-        
-        // Set default values
         document.getElementById('budget-period').value = 'monthly';
         document.getElementById('budget-start-date').valueAsDate = new Date();
-        
-        // Update category options (expense categories only for budgets)
         const categorySelect = document.getElementById('budget-category');
         categorySelect.innerHTML = '';
-        
         expenseCategories.forEach(category => {
             const option = document.createElement('option');
             option.value = category;
             option.textContent = category;
             categorySelect.appendChild(option);
         });
-        
         openModal('budget-modal');
     });
-    
     settingsBtn.addEventListener('click', () => {
-        // Populate form with current settings
         document.getElementById('settings-currency').value = settings.currency;
         document.getElementById('settings-currency-position').value = settings.currencyPosition;
         document.getElementById('settings-date-format').value = settings.dateFormat;
-        
         openModal('settings-modal');
     });
-    
     themeToggle.addEventListener('click', toggleTheme);
-    
-    // Close modals
     closeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             closeAllModals();
         });
     });
-    
     cancelBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             closeAllModals();
         });
     });
-    
-    // Form submissions
     transactionForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         const id = document.getElementById('transaction-id').value || Date.now().toString();
         const type = document.querySelector('input[name="type"]:checked').value;
         let amount = parseFloat(document.getElementById('transaction-amount').value);
@@ -1504,75 +1264,143 @@ function init() {
         const category = document.getElementById('transaction-category').value;
         const date = document.getElementById('transaction-date').value;
         const notes = document.getElementById('transaction-notes').value;
-        
-        // Ensure amount is positive for UI consistency (will be displayed based on type)
         amount = Math.abs(amount);
-        
         const transaction = { id, type, amount, description, category, date, notes };
-        
         if (document.getElementById('transaction-id').value) {
             updateTransaction(transaction);
         } else {
             addTransaction(transaction);
         }
-        
         closeModal('transaction-modal');
         loadTransactions();
     });
-    
     budgetForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         const id = document.getElementById('budget-id').value || Date.now().toString();
         const category = document.getElementById('budget-category').value;
         const amount = parseFloat(document.getElementById('budget-amount').value);
         const period = document.getElementById('budget-period').value;
         const startDate = document.getElementById('budget-start-date').value;
-        
         const budget = { id, category, amount, period, startDate };
-        
         if (document.getElementById('budget-id').value) {
             updateBudget(budget);
         } else {
             addBudget(budget);
         }
-        
         closeModal('budget-modal');
     });
-    
     settingsForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         const currency = document.getElementById('settings-currency').value;
         const currencyPosition = document.getElementById('settings-currency-position').value;
         const dateFormat = document.getElementById('settings-date-format').value;
-        
         updateSettings({ currency, currencyPosition, dateFormat });
-        
         closeModal('settings-modal');
     });
-    
-    // Filter and search event listeners for transactions
     filterType.addEventListener('change', loadTransactions);
     filterCategory.addEventListener('change', loadTransactions);
     filterDate.addEventListener('change', loadTransactions);
     searchTransaction.addEventListener('input', loadTransactions);
-    
-    // Transaction type radio buttons event listener
     document.querySelectorAll('input[name="type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             updateCategoryOptions(e.target.value);
         });
     });
-    
-    // Report event listeners
     reportType.addEventListener('change', generateReport);
     reportPeriod.addEventListener('change', generateReport);
     generateReportBtn.addEventListener('click', generateReport);
     exportReportBtn.addEventListener('click', exportReport);
-    
-    // Show dashboard by default
     showSection('dashboard');
+
+    // --- Profile Modal Logic ---
+    document.getElementById('profile-btn').addEventListener('click', () => openModal('profile-modal'));
+    document.querySelectorAll('#profile-modal .close-modal, #profile-modal .btn-cancel').forEach(btn =>
+      btn.addEventListener('click', () => closeModal('profile-modal'))
+    );
+    document.getElementById('profile-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('profile-name').value.trim();
+      const fileInput = document.getElementById('profile-picture');
+      let imgData = null;
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          imgData = evt.target.result;
+          saveProfile(name, imgData);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        saveProfile(name, null);
+      }
+      closeModal('profile-modal');
+    });
+
+    function saveProfile(name, imgData) {
+      localStorage.setItem('profileName', name);
+      if (imgData) localStorage.setItem('profileImg', imgData);
+      updateProfileUI();
+      showNotification('Profile updated!', 'success');
+    }
+
+    function updateProfileUI() {
+      const name = localStorage.getItem('profileName') || 'JS';
+      const img = localStorage.getItem('profileImg');
+      const profile = document.getElementById('profile-btn');
+      if (img) {
+        profile.innerHTML = `<img src="${img}" alt="Profile" style="width:100%;height:100%;border-radius:50%;">`;
+      } else {
+        profile.textContent = name.length > 2 ? name.slice(0,2).toUpperCase() : name.toUpperCase();
+      }
+    }
+    updateProfileUI();
+
+    // --- Help Modal Logic ---
+    document.getElementById('help-btn').addEventListener('click', () => openModal('help-modal'));
+    document.querySelectorAll('#help-modal .close-modal').forEach(btn =>
+      btn.addEventListener('click', () => closeModal('help-modal'))
+    );
+
+    // --- Reset Data Logic ---
+    document.getElementById('reset-data-btn').addEventListener('click', function() {
+      if (confirm('Are you sure you want to reset all your data? This cannot be undone.')) {
+        localStorage.clear();
+        location.reload();
+      }
+    });
+
+    // --- Theme Selector Logic ---
+    document.getElementById('settings-theme').addEventListener('change', function() {
+      setTheme(this.value);
+      saveSettings();
+    });
+    function setTheme(theme) {
+      document.body.classList.remove('dark-theme', 'theme-sunset', 'theme-mint');
+      if (theme === 'dark') document.body.classList.add('dark-theme');
+      else if (theme === 'sunset') document.body.classList.add('theme-sunset');
+      else if (theme === 'mint') document.body.classList.add('theme-mint');
+    }
+    function saveSettings() {
+      const theme = document.getElementById('settings-theme').value;
+      localStorage.setItem('theme', theme);
+    }
+    function loadSettings() {
+      const theme = localStorage.getItem('theme') || 'default';
+      document.getElementById('settings-theme').value = theme;
+      setTheme(theme);
+    }
+    loadSettings();
+
+    document.getElementById('footer-about-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal('help-modal');
+    });
+    document.getElementById('footer-privacy-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal('privacy-modal');
+    });
+    document.querySelectorAll('#privacy-modal .close-modal').forEach(btn =>
+      btn.addEventListener('click', () => closeModal('privacy-modal'))
+    );
 }
 
 // Initialize the app
